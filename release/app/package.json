@@ -1,0 +1,18 @@
+{
+  "name": "t4-launcher",
+  "version": "1.0.0",
+  "description": "Safe and free offline minecraft launcher",
+  "license": "MIT",
+  "author": {
+    "name": "T4 Launcher",
+    "email": "talgeyou@gmail.com",
+    "url": "https://github.com/talgeyou"
+  },
+  "main": "./dist/main/main.js",
+  "scripts": {
+    "rebuild": "node -r ts-node/register ../../.erb/scripts/electron-rebuild.js",
+    "postinstall": "npm run rebuild && npm run link-modules",
+    "link-modules": "node -r ts-node/register ../../.erb/scripts/link-modules.ts"
+  },
+  "dependencies": {}
+}
