@@ -137,4 +137,4 @@ Project Link: [https://github.com/Talgeyou/t4-launcher/](https://github.com/Talg
 [issues-shield]: https://img.shields.io/github/issues/Talgeyou/t4-launcher.svg?style=for-the-badge
 [issues-url]: https://github.com/Talgeyou/t4-launcher/issues
 [license-shield]: https://img.shields.io/github/license/Talgeyou/t4-launcher.svg?style=for-the-badge
-[license-url]: https://github.com/Talgeyou/t4-launcher/blob/master/LICENSE.txt
+[license-url]: https://github.com/Talgeyou/t4-launcher/blob/master/LICENSE
