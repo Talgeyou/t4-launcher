@@ -14,6 +14,7 @@ module.exports = {
     'jsx-a11y/label-has-associated-control': 'off',
     'no-undef': 'off',
     'no-unused-vars': 'off',
+    'no-shadow': 'off',
   },
   parserOptions: {
     ecmaVersion: 2020,
