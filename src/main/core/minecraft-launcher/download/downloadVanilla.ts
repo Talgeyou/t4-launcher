@@ -1,5 +1,8 @@
 import fs from 'fs';
-import { MinecraftVersionManifest } from 'renderer/entities/minecraft-version';
+import {
+  MinecraftVanillaVersionManifest,
+  MinecraftVersionManifest,
+} from 'renderer/entities/minecraft-version';
 import path from 'path';
 import { MinecraftAssetIndex } from '../types';
 import downloadAssetIndex from './downloadAssetIndex';
@@ -34,7 +37,6 @@ export type DownloadVanillaCallbacks = {
 
 export type DownloadVanillaResult = {
   jarPath: string;
-  manifestPath: string;
   libraryPaths: string[];
   assetsPath: string;
   assetIndexPath: string;
@@ -47,21 +49,20 @@ export default async function downloadVanilla(
   try {
     const result: DownloadVanillaResult = {
       jarPath: '',
-      manifestPath: '',
       libraryPaths: [],
       assetIndexPath: '',
       assetsPath: '',
     };
 
-    result.manifestPath = (
+    const manifestPath = (
       await downloadVersionManifest(
         { minecraftRoot, versionId },
         callbacks?.manifest
       )
     ).path;
 
-    const manifestJson: MinecraftVersionManifest = JSON.parse(
-      fs.readFileSync(result.manifestPath).toString()
+    const manifestJson: MinecraftVanillaVersionManifest = JSON.parse(
+      fs.readFileSync(manifestPath).toString()
     );
 
     result.assetIndexPath = (

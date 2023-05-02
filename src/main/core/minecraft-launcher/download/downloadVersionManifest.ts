@@ -23,6 +23,8 @@ export default async function downloadVersionManifest(
     return { path };
   }
 
+  console.log({ path });
+
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }

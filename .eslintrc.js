@@ -15,6 +15,7 @@ module.exports = {
     'no-undef': 'off',
     'no-unused-vars': 'off',
     'no-shadow': 'off',
+    'no-template-curly-in-string': 'off',
   },
   parserOptions: {
     ecmaVersion: 2020,

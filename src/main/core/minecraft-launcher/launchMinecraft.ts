@@ -1,15 +1,16 @@
 import childProcess from 'child_process';
 import fs from 'fs';
-import { MinecraftVersionManifest } from 'renderer/entities/minecraft-version';
+import {
+  MinecraftForgeVersionManifest,
+  MinecraftVanillaVersionManifest,
+  MinecraftVersionManifest,
+} from 'renderer/entities/minecraft-version';
 import path from 'path';
 import { downloadVanilla } from './download';
 import { DownloadVanillaCallbacks } from './download/downloadVanilla';
 import getLaunchString from './getLaunchString';
 import { MinecraftLaunchParams } from './types';
-
-function isString(item: string | null | undefined): item is string {
-  return typeof item === 'string';
-}
+import { isForgeManifest, isString } from './helpers';
 
 function copyJar(nativesPath: string, jarPath: string) {
   const copiedJarPath = `${nativesPath}\\minecraft.jar`;
@@ -30,8 +31,30 @@ export default async function launchMinecraft(
   { root, versionId, username }: MinecraftLaunchParams,
   callbacks?: MinecraftLaunchCallbacks
 ) {
+  let manifest: MinecraftVersionManifest | null = null;
+
+  const manifestPath = path.resolve(
+    `${root}\\versions\\${versionId}\\${versionId}.json`
+  );
+
+  if (fs.existsSync(manifestPath)) {
+    manifest = JSON.parse(
+      fs
+        .readFileSync(
+          path.resolve(`${root}\\versions\\${versionId}\\${versionId}.json`)
+        )
+        .toString()
+    );
+  }
+
   const downloadVanillaResult = await downloadVanilla(
-    { minecraftRoot: root, versionId },
+    {
+      minecraftRoot: root,
+      versionId:
+        manifest && isForgeManifest(manifest)
+          ? manifest.inheritsFrom
+          : versionId,
+    },
     callbacks?.download
   );
 
@@ -46,7 +69,7 @@ export default async function launchMinecraft(
     return null;
   }
 
-  const { jarPath, libraryPaths, manifestPath } = downloadVanillaResult;
+  const { jarPath, libraryPaths } = downloadVanillaResult;
 
   const manifestJson: MinecraftVersionManifest = JSON.parse(
     fs.readFileSync(manifestPath).toString()
@@ -79,17 +102,15 @@ export default async function launchMinecraft(
   copiedLibraryPaths.push(copiedJarPath);
 
   const launchString = getLaunchString({
-    mainClass: manifestJson.mainClass,
     minecraftRoot: root,
+    manifest: manifestJson,
     username,
-    versionId,
-    jarPath,
-    libraryPaths: libraryPaths.filter(isString),
-    nativesPath,
-    assetsIndex: manifestJson.assets,
   });
 
-  fs.writeFileSync(path.resolve(`${root}\\start_minecraft.bat`), launchString);
+  fs.writeFileSync(
+    path.resolve(`${root}\\start_minecraft.bat`),
+    `${launchString}\nPAUSE`
+  );
 
   if (callbacks?.onLaunchStart) {
     callbacks.onLaunchStart(versionId);

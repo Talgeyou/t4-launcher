@@ -50,9 +50,18 @@ export type MinecraftVersionManifestLibrary = {
   rules?: MinecraftVersionManifestLibraryRule[];
 };
 
-export type MinecraftVersionManifest = {
+export type MinecraftCommonVersionManifest = {
   id: string;
   type: string;
+  libraries: MinecraftVersionManifestLibrary[];
+  mainClass: string;
+  arguments: {
+    game: string[];
+    jvm: string[];
+  };
+};
+
+export type MinecraftVanillaVersionManifest = MinecraftCommonVersionManifest & {
   assetIndex: {
     id: string;
     sha1: string;
@@ -68,6 +77,12 @@ export type MinecraftVersionManifest = {
       url: string;
     };
   };
-  libraries: MinecraftVersionManifestLibrary[];
-  mainClass: string;
 };
+
+export type MinecraftForgeVersionManifest = MinecraftCommonVersionManifest & {
+  inheritsFrom: string;
+};
+
+export type MinecraftVersionManifest =
+  | MinecraftVanillaVersionManifest
+  | MinecraftForgeVersionManifest;

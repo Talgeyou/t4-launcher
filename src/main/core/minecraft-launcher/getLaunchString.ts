@@ -1,52 +1,135 @@
 import path from 'path';
+import fs from 'fs';
+import {
+  MinecraftVanillaVersionManifest,
+  MinecraftVersionManifest,
+} from 'renderer/entities/minecraft-version';
+import { v4 } from 'uuid';
+import { isForgeManifest, isString } from './helpers';
+import getValidLibraries from './download/getValidLibraries';
+import getValidNatives from './download/getValidNatives';
 
 type LaunchArgs = {
   minecraftRoot: string;
-  nativesPath: string;
-  libraryPaths: string[];
-  jarPath: string;
-  mainClass: string;
   username: string;
-  versionId: string;
-  assetsIndex: string;
+  manifest: MinecraftVersionManifest;
 };
 
 export default function getLaunchString({
   minecraftRoot,
-  nativesPath,
-  libraryPaths,
-  jarPath,
-  mainClass,
   username,
-  versionId,
-  assetsIndex,
+  manifest,
 }: LaunchArgs) {
   let launchString = `java`;
 
-  // Memory
-  launchString += ` -Xmx2G -Xms2G`;
-  // OS Version
-  launchString += ' -Dos.name="Windows 10" -Dos.version="10.0"';
-  // Natives path
-  launchString += ` -cp ${libraryPaths
-    .map((libraryPath) => `"${path.resolve(libraryPath)}"`)
-    .join(';')};"${jarPath}"`;
-  launchString += ` -Djava.library.path="${path.resolve(
-    `${nativesPath}\\natives`
-  )}"`;
-  // Launcher Brand
-  launchString += ` -Dminecraft.launcher.brand="t4-launcher"`;
-  // Launcher Version
-  launchString += ` -Dminecraft.launcher.version="1.0.0"`;
+  const vanillaManifest: MinecraftVanillaVersionManifest = isForgeManifest(
+    manifest
+  )
+    ? JSON.parse(
+        fs
+          .readFileSync(
+            path.resolve(
+              minecraftRoot,
+              'versions',
+              manifest.inheritsFrom,
+              `${manifest.inheritsFrom}.json`
+            )
+          )
+          .toString()
+      )
+    : manifest;
 
-  launchString += ` ${mainClass}`;
-  launchString += ` --username ${username}`;
-  launchString += ' --session OFFLINE_MODE';
-  launchString += ` --version ${versionId}`;
-  launchString += ` --gameDir "${path.resolve(minecraftRoot)}"`;
-  launchString += ` --assetsDir "${path.resolve(`${minecraftRoot}\\assets`)}"`;
-  launchString += ` --assetIndex "${assetsIndex}"`;
-  launchString += ` --accessToken ${username}`;
+  launchString += ` ${vanillaManifest.arguments.jvm
+    .filter(isString)
+    .map((argument) =>
+      argument
+        .replaceAll(
+          '${natives_directory}',
+          path.resolve(minecraftRoot, 'libraries')
+        )
+        .replaceAll('${launcher_name}', '"T4 Launcher"')
+        .replaceAll('${launcher_version}', '1.1.0')
+        .replaceAll(
+          '${classpath}',
+          [
+            ...getValidLibraries(vanillaManifest.libraries).map(
+              (library) =>
+                `"${path.resolve(
+                  minecraftRoot,
+                  'libraries',
+                  ...library.downloads.artifact.path.split('/')
+                )}`
+            ),
+            ...getValidNatives(vanillaManifest.libraries).map(
+              (native) =>
+                `"${path.resolve(
+                  minecraftRoot,
+                  'libraries',
+                  ...native.path.split('/')
+                )}"`
+            ),
+            ...(isForgeManifest(manifest)
+              ? getValidLibraries(manifest.libraries).map(
+                  (library) =>
+                    `"${path.resolve(
+                      minecraftRoot,
+                      'libraries',
+                      ...library.downloads.artifact.path.split('/')
+                    )}"`
+                )
+              : []),
+            ...(isForgeManifest(manifest)
+              ? []
+              : [
+                  path.resolve(
+                    minecraftRoot,
+                    'versions',
+                    vanillaManifest.id,
+                    `${vanillaManifest.id}.jar`
+                  ),
+                ]),
+          ].join(';')
+        )
+    )
+    .join(' ')}`;
+
+  if (isForgeManifest(manifest)) {
+    launchString += ` ${manifest.arguments.jvm
+      .map((argument) =>
+        argument
+          .replaceAll('${version_name}', manifest.id)
+          .replaceAll(
+            '${library_directory}',
+            path.resolve(minecraftRoot, 'libraries')
+          )
+          .replaceAll('${classpath_separator}', ';')
+      )
+      .join(' ')}`;
+  }
+
+  launchString += ` ${manifest.mainClass}`;
+
+  launchString += ` ${vanillaManifest.arguments.game
+    .filter(isString)
+    .map((argument) =>
+      argument
+        .replaceAll('${auth_player_name}', username)
+        .replaceAll('${version_name}', vanillaManifest.id)
+        .replaceAll('${game_directory}', minecraftRoot)
+        .replaceAll('${assets_root}', path.resolve(minecraftRoot, 'assets'))
+        .replaceAll('${assets_index_name}', vanillaManifest.assetIndex.id)
+        .replaceAll('${auth_uuid}', v4())
+        .replaceAll('${auth_access_token}', v4())
+        .replaceAll('${clientid}', '1.1.0')
+        .replaceAll('${auth_xuid}', v4())
+        .replaceAll('${user_type}', v4())
+        .replaceAll('${version_type}', vanillaManifest.type)
+    )
+    .join(' ')}`;
+
+  if (isForgeManifest(manifest)) {
+    launchString += ` ${manifest.arguments.game.join(' ')}`;
+  }
 
   return launchString;
 }
